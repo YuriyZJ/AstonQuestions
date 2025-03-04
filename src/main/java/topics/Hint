@@ -21,9 +21,9 @@
 
 ## 📌 Темы:
 - [ООП](topics/oop/README.md)
-- [Collections Framework](questions/Java_Collections.md)
-- [Stream API](questions/Stream_API.md)
-- [Exception](questions/Exception.md)
+- [Collections Framework](topics/сollections/README.md)
+- [Stream API](topics/streamAPI/README.md)
+- [Exception](topics/exception/README.md)
 Теперь при открытии README.md на GitHub можно будет кликнуть по ссылке, и она откроет соответствующий файл с вопросами.
 
 3. Заполняем questions/OOP.md

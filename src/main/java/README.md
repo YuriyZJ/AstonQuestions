@@ -2,6 +2,6 @@
 
 ## 📌 Темы:
 - [ООП](topics/oop/README.md)
-- [Collections Framework](questions/Java_Collections.md)
-- [Stream API](questions/Stream_API.md)
-- [Exception](questions/Exception.md)
+- [Collections Framework](topics/сollections/README.md)
+- [Stream API](topics/streamAPI/README.md)
+- [Exception](topics/exception/README.md)
