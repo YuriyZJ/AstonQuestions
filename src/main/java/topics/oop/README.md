@@ -24,3 +24,5 @@
 22. Рассказать про Optional.
 23. Test
 24. Test
+25. Test
+26. test
