@@ -293,6 +293,129 @@ __Как здесь применены принципы SOLID?__
 [к оглавлению](#patterns)
 
 ### 18. Наблюдатель (Observer)
+Наблюдатель — это поведенческий паттерн проектирования, который создает механизм подписки, позволяющий одним объектам
+отслеживать изменения состояния другого объекта и автоматически реагировать на них.
+
+Основные компоненты:
+- **Субъект (Subject)**: Объект, за которым наблюдают. Управляет списком наблюдателей и уведомляет их об изменениях.
+- **Наблюдатель (Observer)**: Интерфейс, определяющий метод update(), который вызывается при изменении состояния субъекта.
+
+***Пример кода без паттерна Observer(Как не следует делать)***
+
+Описан код, где элемент (логгер Logger) должен обновляться при изменении данных в объекте класса Data.
+```java
+class Data {
+    private int value;
+    private Logger logger;
+
+    public Data(Logger logger) {
+        this.logger = logger;
+    }
+
+    public void setValue(int value) {
+        this.value = value;
+        logger.log("New value: " + value);  // При изменении значения вручную обновляем все зависимые компоненты
+    }
+}
+
+class Logger {
+    public void log(String message) {
+        System.out.println("[LOG] " + message);
+    }
+}
+
+public class Main {
+    public static void main(String[] args) {
+        Logger logger = new Logger();
+        Data data = new Data(logger);
+
+        data.setValue(10); 
+        // Вывод:
+        // [LOG] New value: 10
+    }
+}
+```
+Минусы:
+- **Жесткая связь**: Класс Data напрямую зависит от конкретного класса Logger.
+- **Нарушение Open/Closed(SOLID)**: Добавление нового компонента(ещё одного логгера) требует изменения кода Data.
+- **Сложность масштабирования**: Каждое новое изменение влечет правки в классе Data.
+
+***Пример кода c паттерном Observer(Как следует делать)***
+
+Решить вышеописанную проблему можно с помощью написания отдельных интерфейсов Observer и Subject:
+```java
+interface Observer {
+    void update(int value);
+}
+interface Subject {
+   void addObserver(Observer observer);
+   void removeObserver(Observer observer);
+   void notifyObservers();
+   
+}
+// Субъект (наблюдаемый объект)
+class Data implements Subject{
+    private int value;
+    private List<Observer> observers = new ArrayList<>(); // Список всех наблюдателей
+
+    // Методы для управления подписчиками
+    @Override
+    public void addObserver(Observer observer) {
+        observers.add(observer);
+    }
+   @Override
+    public void removeObserver(Observer observer) {
+        observers.remove(observer);
+    }
+
+    // Уведомление всех наблюдателей
+    @Override
+    private void notifyObservers() {
+        for (Observer observer : observers) {
+            observer.update(value);
+        }
+    }
+
+    public void setValue(int value) {
+        this.value = value;
+        notifyObservers(); // Автоматическое уведомление
+    }
+}
+
+class Logger implements Observer {
+    @Override
+    public void update(int value) {
+        System.out.println("[LOG] New value: " + value);
+    }
+}
+
+public class Main {
+    public static void main(String[] args) {
+        Data data = new Data();
+        Logger logger = new Logger();
+        data.addObserver(logger);   // Подписка на изменения
+        data.setValue(10);
+        // Вывод:
+        // [LOG] New value: 10
+        Logger logger2 = new Loger();
+        data.removeObserver(logger); // Удаление ненужного наблюдателя
+        data.addObserver(logger2); // Добавление нового наблюдателя без изменения кода Data
+    }
+}
+```
+Преимущества:
+- **Слабая связь**: Субъект не зависит от конкретных классов наблюдателей.
+- **Гибкость:** Новые наблюдатели добавляются без изменения кода субъекта.
+
+Применение SOLID в паттерне Observer
+1. **Single Responsibility Principle (SRP)**:Субъект отвечает только за управление наблюдателями и уведомление.
+   Наблюдатели отвечают только за реакцию на изменения.
+2. **Open/Closed Principle (OCP)** Добавление нового наблюдателя не требует изменений в классе Data.
+3. **Liskov Substitution Principle (LSP)** Все наблюдатели реализуют интерфейс Observer и не сужают его исходное поведение.
+4. **Interface Segregation Principle (ISP)** Все методы интерфейсов Observer и Subject реализованы.
+5. **Dependency Inversion Principle (DIP)** Субъект зависит от абстракции Observer, а не от конкретных реализаций.
+
+
 [к оглавлению](#patterns)
 
 ### 19. Состояние (State)
