@@ -252,7 +252,50 @@ __Как здесь применены принципы SOLID?__
 
 ### 6. Адаптер (Adapter)
 [к оглавлению](#patterns)
+Паттерн программирования "Адаптер" (Adapter) — это структурный шаблон проектирования, который позволяет объектам с
+несовместимыми интерфейсами работать вместе. Он выступает в качестве прослойки между двумя объектами, преобразуя вызовы
+одного объекта в вызовы, понятные другому.
+/////////////////////////////////////////
+public interface Animal {
+   void makeSound();
+}
 
+public class Dog implements Animal {
+   @Override
+   public void makeSound() {
+      System.out.println("Гав-гав!");
+   }
+}
+
+public interface Flyable {
+   void fly();
+   void chirp();
+}
+
+public class Bird implements Flyable {
+   @Override
+   public void fly() {
+      System.out.println("Лечу!");
+   }
+
+   @Override
+   public void chirp() {
+      System.out.println("Чирик!");
+   }
+}
+
+
+public class Main {
+   public static void main(String[] args) {
+   Animal dog = new Dog();
+   Flyable bird = new Bird();
+
+
+   Animal adaptedBird = new BirdToAnimalAdapter(bird);
+   dog.makeSound(); 
+   adaptedBird.makeSound();
+   }
+}
 ### 7. Мост (Bridge)
 [к оглавлению](#patterns)
 
