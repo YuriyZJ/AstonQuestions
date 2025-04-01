@@ -41,4 +41,4 @@
 39. Коллекция 10 элементов.Вызываю 9x Iterator.hasNext а затем Iterator.next. Что вернется?
 40. Как перебрать все ключи значения Map (Можно ли через Iterable).
 41. Разница Iterator,Enumerator,ListIterator.
-42. В каких случаях может быть выброшено ConcurrentModificationException.
+42. В каких случаях может быть выброшено ConcurrentModificationException. 
