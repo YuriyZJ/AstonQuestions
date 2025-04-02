@@ -145,7 +145,139 @@ field dialog: Dialog
 
 [к оглавлению](#patterns)
 
+---
+
 ### 2. Абстрактная фабрика (Abstract Factory)
+Паттерн “Абстрактная фабрика” (Abstract Factory)
+Абстрактная фабрика — это порождающий паттерн проектирования, который предоставляет интерфейс для создания семейств взаимосвязанных объектов без привязки к конкретным классам.
+Когда использовать этот паттерн?
+- Когда система должна быть независимой от способа создания и компоновки продуктов.
+- Когда нужно предоставить пользователям интерфейс для создания семейств связанных объектов.
+- Когда конкретные классы должны быть скрыты от клиента.
+
+__Пример без Abstract Factory (Как не надо)__. Здесь клиентский код жестко привязан к конкретным классам, что нарушает OCP (Open-Closed Principle).
+
+``` java
+// Классы продуктов (конкретные реализации)
+class WindowsButton {
+      void render() {
+         System.out.println("Рисуем кнопку для Windows");
+      }
+}
+
+class MacOSButton {
+      void render() {
+         System.out.println("Рисуем кнопку для MacOS");
+      }
+}
+
+// Клиентский код жёстко зависит от конкретных классов
+public class Application {
+    private WindowsButton button;
+
+    public Application() {
+        button = new WindowsButton(); // Жесткая привязка к реализации
+    }
+
+    public void renderUI() {
+        button.render();
+    }
+
+    public static void main(String[] args) {
+        Application app = new Application();
+        app.renderUI(); // Работает только с WindowsButton
+    }
+}
+```
+Что тут не так?
+- Нарушение OCP – если захотим добавить поддержку MacOS, придется менять клиентский код.
+- Проблемы с тестированием – код жестко зависит от конкретных классов.
+- Слабая расширяемость – для новых платформ придется модифицировать классы.
+
+__Пример с Abstract Factory__
+``` java
+// 1. Абстрактный интерфейс для кнопок
+interface Button {
+      void render();
+}
+
+// 2. Конкретные реализации кнопок
+class WindowsButton implements Button {
+      @Override
+      public void render() {
+         System.out.println("Рисуем кнопку для Windows");
+      }
+}
+
+class MacOSButton implements Button {
+      @Override
+      public void render() {
+         System.out.println("Рисуем кнопку для MacOS");
+      }
+}
+
+// 3. Абстрактная фабрика, определяющая создание элементов интерфейса
+interface GUIFactory {
+      Button createButton();
+}
+
+// 4. Конкретные фабрики для каждой ОС
+class WindowsFactory implements GUIFactory {
+      @Override
+      public Button createButton() {
+         return new WindowsButton();
+      }
+}
+
+class MacOSFactory implements GUIFactory {
+   @Override
+   public Button createButton() {
+      return new MacOSButton();
+   }
+}
+
+// 5. Клиентский код, который теперь НЕ зависит от конкретных классов
+class Application {
+   private final Button button;
+
+    // Конструктор принимает фабрику, а не конкретный класс
+    public Application(GUIFactory factory) {
+        this.button = factory.createButton();
+    }
+
+    public void renderUI() {
+        button.render();
+    }
+}
+
+// 6. Создаем правильную фабрику и запускаем приложение
+public class Main {
+   public static void main(String[] args) {
+        GUIFactory factory;
+
+        // Определяем, какую фабрику использовать (можно заменить на чтение из конфига)
+        String osType = "Windows"; // MacOS
+
+        if (osType.equals("Windows")) {
+            factory = new WindowsFactory();
+        } else {
+            factory = new MacOSFactory();
+        }
+
+        // Передаем фабрику в приложение
+        Application app = new Application(factory);
+        app.renderUI();
+    }
+}
+```
+Как здесь применены принципы SOLID?
+1. S (Single Responsibility Principle, Принцип единственной ответственности). Каждый класс отвечает только за свою зону ответственности (фабрика создает объекты, кнопки отрисовываются).
+2. O (Open-Closed Principle, Принцип открытости-закрытости). Теперь можно добавлять новые типы кнопок и фабрик без изменения существующего кода.
+3. L (Liskov Substitution Principle, Принцип подстановки Барбары Лисков). Объекты WindowsButton и MacOSButton заменяют Button без изменений в клиентском коде.
+4. I (Interface Segregation Principle, Принцип разделения интерфейсов). Интерфейс Button не перегружен ненужными методами.
+5. D (Dependency Inversion Principle, Принцип инверсии зависимостей). Клиентский код зависит от абстракции (GUIFactory), а не от конкретных классов (WindowsButton, MacOSButton).
+
+
 [к оглавлению](#patterns)
 
 ---
@@ -365,11 +497,11 @@ public class SheepFarm {
 Шаблон подобен рецепту объединения различных объектов и классов для создания более крупной структуры. Это немного похоже на следование чертежу при строительстве дома. Эти шаблоны учат нас объединять уникальные части системы таким образом, чтобы их было легко изменять и расширять, не затрагивая всю систему.
 
 ### 6. Адаптер (Adapter)
-[к оглавлению](#patterns)
 Паттерн программирования "Адаптер" (Adapter) — это структурный шаблон проектирования, который позволяет объектам с
 несовместимыми интерфейсами работать вместе. Он выступает в качестве прослойки между двумя объектами, преобразуя вызовы
 одного объекта в вызовы, понятные другому.
-/////////////////////////////////////////
+
+```java
 public interface Animal {
    void makeSound();
 }
@@ -410,6 +542,11 @@ public class Main {
    adaptedBird.makeSound();
    }
 }
+```
+[к оглавлению](#patterns)
+
+---
+
 ### 7. Мост (Bridge)
 [к оглавлению](#patterns)
 
