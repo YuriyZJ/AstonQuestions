@@ -488,6 +488,126 @@ public class SheepFarm {
 [к оглавлению](#patterns)
 
 ### 5. Одиночка (Singleton)
+Одиночка (Singleton) — это порождающий паттерн, который гарантирует, что у класса есть только один экземпляр, и предоставляет глобальную точку доступа к этому экземпляру.
+
+Когда использовать?
+- Для управления ресурсами (например, логирование, кэширование, конфигурационные файлы).
+- Когда нужно создать объект только один раз и переиспользовать его в разных частях приложения.
+
+__Пример без Singleton (Как не надо)__. В этом примере создается несколько объектов конфигурации, что приводит к ненужному расходу памяти и потенциальным проблемам с синхронизацией.
+
+```java
+class Configuration {
+    private String configData;
+
+    public Configuration() {
+        configData = "Настройки приложения";
+    }
+
+    public String getConfigData() {
+        return configData;
+    }
+}
+
+public class Main {
+    public static void main(String[] args) {
+        Configuration config1 = new Configuration();
+        Configuration config2 = new Configuration();
+
+        System.out.println(config1.getConfigData());
+        System.out.println(config2.getConfigData());
+
+        // config1 и config2 — это два разных объекта!
+        System.out.println(config1 == config2); // false
+    }
+}
+```
+
+Что тут не так?
+- Нарушение принципа экономии ресурсов – создаются дубликаты объекта, хотя настройки могут быть едиными для всего приложения.
+- Проблемы с согласованностью данных – если один объект изменит настройки, другие объекты этого не увидят.
+- Сложность в управлении – трудно гарантировать, что в программе существует только один экземпляр.
+
+__Пример с правильным использованием паттерна Singleton__.
+Используем паттерн Singleton для того, чтобы обеспечить один экземпляр объекта.
+
+```java
+// 1. Класс Singleton
+class Configuration {
+    // Приватное статическое поле для единственного экземпляра
+    private static Configuration instance;
+
+    private String configData;
+
+    // 2. Приватный конструктор запрещает создание объекта извне
+    private Configuration() {
+        configData = "Настройки приложения";
+    }
+
+    // 3. Метод для получения единственного экземпляра
+    public static Configuration getInstance() {
+        if (instance == null) {
+            instance = new Configuration();
+        }
+        return instance;
+    }
+
+    public String getConfigData() {
+        return configData;
+    }
+}
+
+// 4. Клиентский код
+public class Main {
+    public static void main(String[] args) {
+        Configuration config1 = Configuration.getInstance();
+        Configuration config2 = Configuration.getInstance();
+
+        System.out.println(config1.getConfigData());
+        System.out.println(config2.getConfigData());
+
+        // config1 и config2 теперь ссылаются на один и тот же объект!
+        System.out.println(config1 == config2); // true
+    }
+}
+```
+
+__Улучшенная версия Singleton (потокобезопасная)__.
+В многопоточной среде лучше использовать Lazy Initialization с двойной проверкой:
+
+```java
+class Configuration {
+private static volatile Configuration instance;
+private String configData;
+
+    private Configuration() {
+        configData = "Настройки приложения";
+    }
+
+    public static Configuration getInstance() {
+        if (instance == null) { // Первая проверка
+            synchronized (Configuration.class) {
+                if (instance == null) { // Вторая проверка
+                    instance = new Configuration();
+                }
+            }
+        }
+        return instance;
+    }
+
+    public String getConfigData() {
+        return configData;
+    }
+}
+```
+
+__Как здесь применены принципы SOLID?__
+1. S (Single Responsibility Principle, Принцип единственной ответственности). Класс Configuration отвечает только за управление единственным экземпляром настроек.
+2. O (Open-Closed Principle, Принцип открытости-закрытости). Добавлять новые поля в Configuration можно без изменения клиентского кода.
+3. L (Liskov Substitution Principle, Принцип подстановки Барбары Лисков). Этот принцип не особо применим в Singleton, так как не предполагается наследование от этого класса.
+4. I (Interface Segregation Principle, Принцип разделения интерфейсов). Класс Configuration предоставляет только нужные методы без перегрузки интерфейса.
+5. D (Dependency Inversion Principle, Принцип инверсии зависимостей). Если в коде использовать Configuration через интерфейс, то зависимости можно инвертировать, но Singleton обычно сам по себе не предполагает работу через интерфейсы.
+
 [к оглавлению](#patterns)
 
 ---
