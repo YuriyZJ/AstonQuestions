@@ -718,7 +718,7 @@ public class Main {
 - Если добавить новую форму, придётся создавать её для каждого цвета.
 - Код очень жёстко связан (high coupling).
 
-__Пример с правильным использованием паттерна Singleton__. Теперь создадим разделение на абстракцию и реализацию, чтобы можно было изменять их независимо.
+__Пример с правильным использованием паттерна Bridge__. Теперь создадим разделение на абстракцию и реализацию, чтобы можно было изменять их независимо.
 
 ```java
 // 1. Интерфейс "Цвет" (реализация, которая отделена от абстракции)
@@ -814,18 +814,202 @@ __Когда использовать паттерн Bridge?__
 ---
 
 ### 8. Компоновщик (Composite)
+Паттерн Composite (Компоновщик) позволяет работать с группой объектов так же, как и с отдельным объектом. Он объединяет объекты в древовидную структуру и даёт возможность клиенту работать с ними единообразно.
+
+Проблемы, которые решает паттерн Composite
+- Обычные и составные объекты обрабатываются по-разному. В сложных системах есть отдельные (атомарные) объекты и группы объектов, но код их обработки сильно отличается.
+- Сложная обработка древовидных структур. Без паттерна приходится использовать громоздкие условия (if-else) для проверки типа объекта перед вызовом метода.
+- Жёсткая связанность кода. Когда каждый новый тип элемента требует изменения клиентского кода.
+
+Шаги реализации паттерна Composite
+- Создаём общий интерфейс для листовых и составных объектов
+- Создаём классы для отдельных объектов (Лист – Leaf)
+- Создаём класс для составных объектов (Контейнер – Composite)
+- Реализуем методы, которые работают одинаково и для отдельных, и для составных объектов
+
+__Пример без Composite (Как не надо)__. Допустим, мы разрабатываем файловую систему. У нас есть файлы и папки, но они обрабатываются разными способами.
+
+```java
+import java.util.ArrayList;
+import java.util.List;
+
+// Отдельный файл
+class File {
+    private String name;
+
+    public File(String name) {
+        this.name = name;
+    }
+
+    public void showName() {
+        System.out.println("Файл: " + name);
+    }
+}
+
+// Папка с файлами
+class Folder {
+    private String name;
+    private List<File> files = new ArrayList<>();
+
+    public Folder(String name) {
+        this.name = name;
+    }
+
+    public void addFile(File file) {
+        files.add(file);
+    }
+
+    public void showContents() {
+        System.out.println("Папка: " + name);
+        for (File file : files) {
+            file.showName();
+        }
+    }
+}
+
+// Клиентский код
+public class Main {
+   public static void main(String[] args) {
+        File file1 = new File("Документ.txt");
+        File file2 = new File("Изображение.png");
+
+        Folder folder = new Folder("Рабочий стол");
+        folder.addFile(file1);
+        folder.addFile(file2);
+
+        folder.showContents();
+    }
+}
+```
+
+Что тут не так?
+- Файл и Папка не имеют общего интерфейса → нельзя работать с ними одинаково.
+- Папка может содержать только файлы, но не другие папки → структура негибкая.
+- Добавление новых типов (например, ZIP-архива) потребует изменения всей структуры.
+
+__Пример с правильным использованием паттерна Composite__. Теперь создадим единый интерфейс для всех элементов и позволим папкам содержать как файлы, так и другие папки.
+
+```java
+import java.util.ArrayList;
+import java.util.List;
+
+// 1. Общий интерфейс для файлов и папок
+interface FileSystemComponent {
+    void showDetails();
+}
+
+// 2. Класс для обычного файла (Лист)
+class File implements FileSystemComponent {
+    private String name;
+
+    public File(String name) {
+        this.name = name;
+    }
+
+    @Override
+    public void showDetails() {
+        System.out.println("Файл: " + name);
+    }
+}
+
+// 3. Класс для папки (Компоновщик)
+class Folder implements FileSystemComponent {
+   private String name;
+   private List<FileSystemComponent> components = new ArrayList<>();
+
+    public Folder(String name) {
+        this.name = name;
+    }
+
+    // Метод для добавления файлов и других папок
+    public void addComponent(FileSystemComponent component) {
+        components.add(component);
+    }
+
+    @Override
+    public void showDetails() {
+        System.out.println("Папка: " + name);
+        for (FileSystemComponent component : components) {
+            component.showDetails(); // Рекурсивный вызов для всех элементов
+        }
+    }
+}
+
+// 4. Клиентский код
+public class Main {
+   public static void main(String[] args) {
+   // Создаем файлы
+        File file1 = new File("Документ.txt");
+        File file2 = new File("Изображение.png");
+
+        // Создаем папки
+        Folder mainFolder = new Folder("Рабочий стол");
+        Folder subFolder = new Folder("Проекты");
+
+        // Добавляем файлы в подпапку
+        subFolder.addComponent(file1);
+
+        // Добавляем файлы и подпапку в главную папку
+        mainFolder.addComponent(subFolder);
+        mainFolder.addComponent(file2);
+
+        // Вывод структуры
+        mainFolder.showDetails();
+    }
+}
+```
+
+__Как здесь применены принципы SOLID?__
+1. S (Single Responsibility Principle, Принцип единственной ответственности). File отвечает только за файл. Folder отвечает только за управление содержимым.
+2. O (Open-Closed Principle, Принцип открытости-закрытости). Можно добавлять новые компоненты (например, ZIP-архив) без изменения существующего кода.
+3. L (Liskov Substitution Principle, Принцип подстановки Барбары Лисков). FileSystemComponent можно заменить на File или Folder, и код будет работать.
+4. I (Interface Segregation Principle, Принцип разделения интерфейсов). Интерфейс FileSystemComponent содержит только нужный метод showDetails().
+5. D (Dependency Inversion Principle, Принцип инверсии зависимостей). Folder не зависит от конкретных классов, а работает через интерфейс FileSystemComponent.
+
+Преимущества паттерна Composite
+- Упрощает работу с деревьями
+- Можно использовать одинаковые методы для отдельных и составных объектов
+- Легко добавлять новые компоненты без изменения существующего кода
+
+Недостатки паттерна Composite
+- Сложнее, чем обычный код
+- Может добавить ненужную сложность, если нет необходимости в древовидной структуре
+
+Когда использовать паттерн Composite?
+- Если у вас есть древовидная структура (например, файловая система, графическое меню, организация компании).
+- Когда клиентский код должен работать единым способом с простыми и составными объектами.
+- Когда отдельные объекты и группы объектов имеют схожие операции.
+
+НЕ ИСПОЛЬЗУЙТЕ паттерн, если структура проекта простая и иерархия не нужна.
+
 [к оглавлению](#patterns)
+
+---
 
 ### 9. Декоратор (Decorator)
+
+
 [к оглавлению](#patterns)
+
+---
 
 ### 10. Фасад (Facade)
+
+
 [к оглавлению](#patterns)
+
+---
 
 ### 11. Легковес (Lightweight)
+
+
 [к оглавлению](#patterns)
 
+---
+
 ### 12. Заместитель (Proxy)
+
+
 [к оглавлению](#patterns)
 
 ---
