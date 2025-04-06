@@ -987,6 +987,157 @@ __Как здесь применены принципы SOLID?__
 ---
 
 ### 9. Декоратор (Decorator)
+Декоратор — это структурный паттерн, который позволяет динамически добавлять объектам новую функциональность, оборачивая их в другие объекты-декораторы, не изменяя исходный код.
+
+Проблемы, которые решает паттерн Decorator
+- Жесткое наследование. Если у нас есть класс, и мы хотим добавить ему разные варианты поведения (например, логгирование, кэширование, авторизацию и т.д.), то придется создавать множество подклассов (взрыв классов).
+- Нарушение принципа открытости/закрытости. Чтобы добавить новое поведение, приходится изменять уже существующий класс.
+- Невозможность комбинаторики поведения без дублирования. Если мы хотим скомбинировать 2–3 поведения, нам приходится создавать ещё больше подклассов.
+
+Решение через паттерн Декоратор
+- Мы создаём единый интерфейс,
+- базовую реализацию,
+- и декораторы, которые оборачивают объект, реализующий тот же интерфейс, добавляя поведение до/после вызова.
+
+__Пример без Decorator (Как не надо)__.
+```java
+// Интерфейс
+interface Notifier {
+    void send(String message);
+}
+
+// Простая реализация
+class EmailNotifier implements Notifier {
+   public void send(String message) {
+        System.out.println("Отправка email: " + message);
+   }
+}
+
+// Если хотим логировать
+class EmailNotifierWithLogging extends EmailNotifier {
+   public void send(String message) {
+        System.out.println("Лог: " + message);
+        super.send(message);
+   }
+}
+
+// Если хотим логировать + шифровать
+class EmailNotifierWithLoggingAndEncryption extends EmailNotifierWithLogging {
+   public void send(String message) {
+        String encrypted = "[Зашифровано] " + message;
+        super.send(encrypted);
+   }
+}
+```
+
+Проблема:
+- Комбинируем поведение через множественное наследование.
+- Класс EmailNotifierWithLoggingAndEncryption жёстко связан с цепочкой базовых классов.
+- Гибкости и масштабируемости — ноль.
+
+
+__Пример с правильным использованием паттерна Decorator __.
+```java
+// 1. Общий интерфейс для всех видов уведомлений
+interface Notifier {
+    void send(String message);
+}
+
+// 2. Базовая реализация — простая отправка email
+class EmailNotifier implements Notifier {
+   @Override
+   public void send(String message) {
+        System.out.println("Отправка email: " + message);
+   }
+}
+
+// 3. Абстрактный декоратор — оборачивает любой Notifier
+abstract class NotifierDecorator implements Notifier {
+    protected Notifier wrappee; // объект, который оборачиваем
+
+    public NotifierDecorator(Notifier wrappee) {
+        this.wrappee = wrappee;
+    }
+
+    @Override
+    public void send(String message) {
+        wrappee.send(message); // делегируем отправку
+    }
+}
+
+// 4. Декоратор логгирования
+class LoggingDecorator extends NotifierDecorator {
+   public LoggingDecorator(Notifier wrappee) {
+        super(wrappee);
+   }
+
+    @Override
+    public void send(String message) {
+        System.out.println("Логгирование: " + message);
+        super.send(message); // отправляем сообщение
+    }
+}
+
+// 5. Декоратор шифрования
+class EncryptionDecorator extends NotifierDecorator {
+   public EncryptionDecorator(Notifier wrappee) {
+        super(wrappee);
+   }
+
+    @Override
+    public void send(String message) {
+        String encrypted = "[Зашифровано] " + message;
+        super.send(encrypted);
+    }
+}
+
+// 6. Клиентский код
+public class Main {
+      public static void main(String[] args) {
+         // Базовый notifier
+         Notifier simpleNotifier = new EmailNotifier();
+
+        // Добавим логгирование
+        Notifier loggingNotifier = new LoggingDecorator(simpleNotifier);
+
+        // Добавим шифрование поверх логгирования
+        Notifier securedNotifier = new EncryptionDecorator(loggingNotifier);
+
+        securedNotifier.send("Важное сообщение");
+    }
+}
+```
+
+Что делает каждый класс/интерфейс
+- Notifier. Интерфейс с методом send() — контракт
+- EmailNotifier. Базовая реализация отправки
+- NotifierDecorator. Абстрактный класс-декоратор — содержит ссылку на другой Notifier и делегирует вызовы
+- LoggingDecorator. Добавляет логгирование перед отправкой
+- EncryptionDecorator. Добавляет шифрование сообщения перед отправкой
+- Main. Клиентский код — комбинирует декораторы
+
+__Как здесь применены принципы SOLID?__
+1. S - Single Responsibility. Каждый класс отвечает за конкретное поведение
+2. O - Open/Closed. Можно добавлять новые декораторы, не изменяя существующие
+3. L - Liskov Substitution. Все декораторы и базовый класс — это Notifier, можно заменить друг на друга
+4. I - Interface Segregation. Интерфейс минимален и конкретен (send)
+5. D - Dependency Inversion. Декораторы зависят от абстракции (Notifier), а не от конкретных реализаций
+
+Преимущества паттерна Декоратор
+- Гибкое расширение поведения без наследования
+- Позволяет динамически комбинировать поведение
+- Принцип открытости/закрытости соблюдается
+- Можно применять множество декораторов
+
+Недостатки
+- Может быть много мелких классов
+- Сложнее отследить полный стек декораторов при отладке
+- Вложенные вызовы могут усложнять трассировку
+
+Когда применять Декоратор
+- Когда нужно гибко добавлять поведение
+- Когда наследование неудобно или ведёт к взрыву классов
+- Когда поведение может комбинироваться в разном порядке
 
 
 [к оглавлению](#patterns)
