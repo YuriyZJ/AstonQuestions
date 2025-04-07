@@ -1145,7 +1145,148 @@ __Как здесь применены принципы SOLID?__
 ---
 
 ### 10. Фасад (Facade)
+Facade — это структурный паттерн, который предоставляет упрощённый интерфейс к сложной системе классов, библиотеке или фреймворку.
 
+Проблемы, которые решает Facade
+- Сложный интерфейс. Много классов и зависимостей. Работа с ними требует знания внутренней логики.
+- Низкая абстракция. Клиент должен знать, какие компоненты вызывать и в каком порядке.
+- Сильная связность. Код, напрямую работающий с деталями, сложно изменять, тестировать и поддерживать.
+
+Что делает Facade?
+- Скрывает внутреннюю реализацию и предоставляет простой интерфейс.
+- Делает систему удобной для использования даже для новичков.
+- Делает код клиента более чистым и читаемым.
+
+__Пример без Facade (Как не надо)__.
+```java
+class CPU {
+   public void freeze() {
+        System.out.println("CPU: freeze");
+   }
+
+    public void execute() {
+        System.out.println("CPU: execute");
+    }
+}
+
+class Memory {
+   public void load(long position, String data) {
+        System.out.println("Memory: load data '" + data + "' at position " + position);
+   }
+}
+
+class HardDrive {
+   public String read(long lba, int size) {
+        return "data_from_disk";
+   }
+}
+
+// Клиент сам управляет всеми компонентами
+public class Client {
+   public static void main(String[] args) {
+         CPU cpu = new CPU();
+         Memory memory = new Memory();
+         HardDrive hardDrive = new HardDrive();
+
+        cpu.freeze();
+        String data = hardDrive.read(100, 64);
+        memory.load(200, data);
+        cpu.execute();
+    }
+}
+```
+
+Проблема:
+- Клиент знает детали, последовательность шагов.
+- В случае изменения логики — нужно переписывать клиентский код.
+
+__Пример с правильным использованием паттерна Facade __.
+```java
+// 1. Интерфейсы и классы подсистем
+class CPU {
+   public void freeze() {
+        System.out.println("CPU: freeze");
+   }
+
+    public void execute() {
+        System.out.println("CPU: execute");
+    }
+}
+
+class Memory {
+   public void load(long position, String data) {
+        System.out.println("Memory: load '" + data + "' at position " + position);
+   }
+}
+
+class HardDrive {
+   public String read(long lba, int size) {
+        return "data_from_disk";
+   }
+}
+
+// 2. Класс Facade — упрощённый интерфейс
+
+class ComputerFacade {
+private CPU cpu;
+private Memory memory;
+private HardDrive hardDrive;
+
+    public ComputerFacade() {
+        this.cpu = new CPU();
+        this.memory = new Memory();
+        this.hardDrive = new HardDrive();
+    }
+
+    // Метод, который инкапсулирует сложную последовательность вызовов
+    public void startComputer() {
+        cpu.freeze(); // 1. Замораживаем CPU
+        String data = hardDrive.read(100, 64); // 2. Читаем данные с диска
+        memory.load(200, data); // 3. Загружаем их в память
+        cpu.execute(); // 4. Выполняем инструкции
+    }
+}
+
+// 3. Клиентский код работает только с фасадом
+
+public class Client {
+   public static void main(String[] args) {
+       ComputerFacade computer = new ComputerFacade();
+       computer.startComputer(); // простой и понятный вызов
+   }
+}
+```
+
+Что делает каждый компонент:
+- CPU. Подсистема процессора
+- Memory. Подсистема памяти
+- HardDrive. Подсистема жёсткого диска
+- ComputerFacade. Упрощённый интерфейс, скрывающий логику запуска
+- Client. Использует только фасад и не знает внутренних деталей
+
+__Как здесь применены принципы SOLID?__
+1. S - Single Responsibility. Фасад отвечает только за упрощение интерфейса
+2. O - Open/Closed. Фасад можно расширять, не трогая подсистемы
+3. L - Liskov Substitution. Подсистемы можно менять или расширять
+4. I - Interface Segregation. Клиент работает только с нужным набором методов
+5. D - Dependency Inversion. Фасад зависит от абстракций (возможна инверсия через DI)
+
+Преимущества
+- Простота использования сложной системы
+- Инкапсуляция внутренней логики
+- Более чистый клиентский код
+- Улучшенная поддержка и тестируемость
+
+Недостатки
+- Иногда может излишне скрыть важную функциональность
+- Потенциально становится монолитным объектом, если обрастает логикой
+- При частых изменениях во внутренней логике может требовать правки фасада
+
+Когда применять Facade?
+- Когда система слишком сложна для прямого использования
+- Когда нужно скрыть детали реализации
+- Когда часто используется один и тот же набор методов
+- Когда нужно упростить API библиотеки/фреймворка
 
 [к оглавлению](#patterns)
 
