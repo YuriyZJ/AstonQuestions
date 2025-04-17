@@ -1294,6 +1294,180 @@ __Как здесь применены принципы SOLID?__
 
 ### 11. Легковес (Lightweight)
 
+Flyweight (Легковес) — это паттерн проектирования, который позволяет экономить память, разделяя общее состояние объектов между собой, вместо хранения одинаковых данных в каждом объекте.
+
+Проблема, которую решает Flyweight
+- Допустим, у нас есть 1 миллион объектов. Если каждый из них хранит одинаковые поля (например, цвет, текстура, тип), то мы расходуем память на дублирование одинаковой информации.
+
+Проблемы без паттерна:
+- Дублирование данных.
+- Высокое потребление памяти.
+- Медленная работа при большом объёме данных (UI, графика, игры и т.п.).
+
+Как работает Flyweight. Разделяет объект на:
+- Внутреннее состояние (invariant/shared): общее для многих объектов.
+- Внешнее состояние (variant/extrinsic): передаётся извне, уникально для каждого объекта.
+
+Шаги реализации
+- Определить повторяющееся внутреннее состояние.
+- Создать интерфейс Flyweight.
+- Создать фабрику, которая будет возвращать уже созданный объект с нужным внутренним состоянием (кешировать их).
+- При необходимости — передавать уникальные данные как параметры.
+
+__Пример без Flyweight (Как не надо)__.
+```java
+class Tree {
+   private String type;
+   private String color;
+   private String texture;
+   private int x;
+   private int y;
+
+    public Tree(String type, String color, String texture, int x, int y) {
+        this.type = type;
+        this.color = color;
+        this.texture = texture;
+        this.x = x;
+        this.y = y;
+    }
+
+    public void draw() {
+        System.out.println("Drawing " + type + " at (" + x + ", " + y + ")");
+    }
+}
+
+public class Forest {
+    List<Tree> trees = new ArrayList<>();
+
+    public void plantTree(String type, String color, String texture, int x, int y) {
+        trees.add(new Tree(type, color, texture, x, y));
+    }
+}
+```
+
+Проблема:
+- У каждого дерева — свои дублирующиеся поля type, color, texture.
+- При 1 миллионе деревьев — колоссальный расход памяти.
+
+__Пример с правильным использованием паттерна Flyweight__.
+
+```java
+1. Flyweight-интерфейс и конкретный класс
+
+// Интерфейс, описывающий общий тип дерева
+interface TreeType {
+   void draw(int x, int y);
+}
+
+// Конкретный "легковес" — содержит общее состояние (тип, цвет, текстура)
+class ConcreteTreeType implements TreeType {
+   private String type;
+   private String color;
+   private String texture;
+
+    public ConcreteTreeType(String type, String color, String texture) {
+        this.type = type;
+        this.color = color;
+        this.texture = texture;
+    }
+
+    @Override
+    public void draw(int x, int y) {
+        // Внешнее состояние (x, y) передаётся как параметры
+        System.out.println("Drawing " + type + " at (" + x + ", " + y + ")");
+    }
+}
+
+2. Фабрика для кеширования и повторного использования
+
+// Фабрика, которая хранит кэш уже созданных объектов
+class TreeFactory {
+    private static Map<String, TreeType> treeTypeMap = new HashMap<>();
+
+    public static TreeType getTreeType(String type, String color, String texture) {
+        String key = type + color + texture;
+        if (!treeTypeMap.containsKey(key)) {
+            treeTypeMap.put(key, new ConcreteTreeType(type, color, texture));
+        }
+        return treeTypeMap.get(key);
+    }
+}
+
+3. Объект дерева с внешним состоянием
+
+// Отдельный класс, который содержит уникальное состояние (x, y)
+class Tree {
+   private int x;
+   private int y;
+   private TreeType type;
+
+    public Tree(int x, int y, TreeType type) {
+        this.x = x;
+        this.y = y;
+        this.type = type;
+    }
+
+    public void draw() {
+        type.draw(x, y);
+    }
+}
+
+4. Клиентский класс
+
+public class Forest {
+    List<Tree> trees = new ArrayList<>();
+
+    public void plantTree(int x, int y, String type, String color, String texture) {
+        TreeType treeType = TreeFactory.getTreeType(type, color, texture);
+        Tree tree = new Tree(x, y, treeType);
+        trees.add(tree);
+    }
+
+    public void drawForest() {
+        for (Tree tree : trees) {
+            tree.draw();
+        }
+    }
+
+    public static void main(String[] args) {
+        Forest forest = new Forest();
+        for (int i = 0; i < 1_000_000; i++) {
+            forest.plantTree(i % 1000, i / 1000, "Oak", "Green", "Rough");
+        }
+        forest.drawForest();
+    }
+}
+```
+
+Что делает каждый компонент:
+- TreeType	 - Интерфейс легковеса
+- ConcreteTreeType - Хранит общее состояние деревьев
+- TreeFactory - Возвращает общий экземпляр TreeType из кэша
+- Tree - Объект с внешним состоянием (координаты)
+- Forest - Клиент, создающий деревья
+
+__Как здесь применены принципы SOLID?__
+1. S - SRP. Каждый класс выполняет одну задачу
+2. O - OCP. Можно добавлять новые типы деревьев, не изменяя старые
+3. L - LSP. ConcreteTreeType можно заменить на любой другой тип дерева
+4. I - ISP. Интерфейс Flyweight минимален, не перегружен
+5. D - DIP. Клиенты зависят от абстракции TreeType, а не конкретной реализации
+
+Преимущества
+- Снижает потребление памяти
+- Повышает производительность при большом количестве объектов
+- Централизует общее поведение
+- Упрощает кэширование и повторное использование
+
+Недостатки
+- Сложнее читать и сопровождать
+- Требуется отделить внешнее и внутреннее состояние
+- При неправильной реализации — может усложнить логику
+
+Когда применять Flyweight?
+- Большое количество однотипных объектов (графика, интерфейс, игра).
+- Общие свойства можно вынести.
+- Необходимость в высокой производительности и низком потреблении памяти.
 
 [к оглавлению](#patterns)
 
