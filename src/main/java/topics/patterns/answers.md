@@ -1474,7 +1474,140 @@ __Как здесь применены принципы SOLID?__
 ---
 
 ### 12. Заместитель (Proxy)
+Proxy (Заместитель) — это структурный паттерн, который позволяет подставлять вместо реального объекта специальный объект-заместитель, контролирующий доступ к настоящему объекту.
 
+Проблемы, которые решает Proxy
+- Ленивая инициализация — например, тяжёлый объект создаётся только при первом обращении.
+- Контроль доступа — например, проверка прав доступа перед выполнением.
+- Кэширование — кэширование результатов для оптимизации.
+- Логирование, статистика — запись вызовов без изменения основного кода.
+- Удалённый доступ (RPC, RMI) — работа с объектом, находящимся на другом сервере.
+
+__Пример без Proxy(Как не надо)__.
+```java
+class RealImage {
+   private String filename;
+
+    public RealImage(String filename) {
+        this.filename = filename;
+        loadFromDisk(); // Затратная операция
+    }
+
+    private void loadFromDisk() {
+        System.out.println("Loading " + filename);
+    }
+
+    public void display() {
+        System.out.println("Displaying " + filename);
+    }
+}
+
+public class ImageViewer {
+   public static void main(String[] args) {
+      RealImage image = new RealImage("photo.jpg"); // грузится сразу
+      image.display();
+}
+}
+```
+
+Проблема:
+- Изображение загружается сразу, даже если display() не вызывается.
+- Нет возможности кэшировать, логировать или управлять правами доступа.
+
+__Пример с правильным использованием паттерна Proxy__.
+```java
+Шаг 1: Общий интерфейс
+
+// Интерфейс для настоящего объекта и прокси
+interface Image {
+   void display();
+   }
+
+Шаг 2: Настоящий объект (Real Subject)
+
+// Реальный объект, загрузка которого дорогая по ресурсам
+class RealImage implements Image {
+   private String filename;
+
+    public RealImage(String filename) {
+        this.filename = filename;
+        loadFromDisk();
+    }
+
+    private void loadFromDisk() {
+        System.out.println("Loading " + filename);
+    }
+
+    @Override
+    public void display() {
+        System.out.println("Displaying " + filename);
+    }
+}
+
+Шаг 3: Прокси (заместитель)
+
+// Прокси-объект, который контролирует доступ к RealImage
+class ProxyImage implements Image {
+   private String filename;
+   private RealImage realImage;
+
+    public ProxyImage(String filename) {
+        this.filename = filename;
+    }
+
+    @Override
+    public void display() {
+        // Ленивая инициализация — загружается только при первом вызове
+        if (realImage == null) {
+            realImage = new RealImage(filename);
+        }
+        realImage.display();
+    }
+}
+
+Шаг 4: Использование
+
+public class ImageViewer {
+   public static void main(String[] args) {
+      Image image = new ProxyImage("photo.jpg"); // пока не загружено
+      System.out.println("Image created");
+      image.display(); // загружается при первом вызове
+      image.display(); // второй раз — уже без загрузки
+   }
+}
+```
+
+Объяснение компонентов
+- Image - Общий интерфейс
+- RealImage - Реальный объект, ресурсоёмкий
+- ProxyImage - Контролирует доступ, загружает по запросу
+- ImageViewer - Клиент, работает через прокси
+
+__Как здесь применены принципы SOLID?__
+1. S - SRP. Прокси занимается контролем доступа, а RealImage — отображением
+2. O - OCP. Можно добавлять новые типы прокси, не меняя RealImage
+3. L - LSP. ProxyImage полностью заменяет RealImage, работает по интерфейсу
+4. I - ISP. Интерфейс Image содержит только нужный метод
+5. D - DIP. Клиент зависит от абстракции Image, а не от конкретной реализации
+
+Преимущества
+- Контроль доступа
+- Ленивая инициализация
+- Возможность кэширования
+- Логгирование, мониторинг
+- Удалённые объекты (RMI, Web Services)
+
+Недостатки
+- Увеличение количества классов
+- Усложнение архитектуры
+- Прокси может стать “бутылочным горлышком” при частых вызовах
+
+Виды прокси
+- Virtual Proxy - ленивая загрузка
+- Protection Proxy - контроль доступа
+- Remote Proxy - работа с удалёнными объектами
+- Cache Proxy - кэширование результатов
+- Smart Proxy - добавляет дополнительные действия (логгирование, подсчёт ссылок)
 
 [к оглавлению](#patterns)
 
